@@ -53,14 +53,16 @@ class ChefAPI(object):
 
         In order to use :class:`EncryptedDataBagItem` object it is necessary
         to specify either a path to a file containing the Chef secret key and
-        the Encrypted Databag version to be used (v1 by default)
+        the Encrypted Databag version to be used (v1 by default).
+        If both secret_file and secret_key are passed as argument, secret_key
+        will take precedence.
     """
 
     ruby_value_re = re.compile(r'#\{([^}]+)\}')
     env_value_re = re.compile(r'ENV\[(.+)\]')
     ruby_string_re = re.compile(r'^\s*(["\'])(.*?)\1\s*$')
 
-    def __init__(self, url, key, client, version='0.10.8', headers={}, ssl_verify=True, secret_file=None, encryption_version=1):
+    def __init__(self, url, key, client, version='0.10.8', headers={}, ssl_verify=True, secret_file=None, secret_key=None, encryption_version=1):
         self.url = url.rstrip('/')
         self.parsed_url = six.moves.urllib.parse.urlparse(self.url)
         if not isinstance(key, Key):
@@ -78,11 +80,15 @@ class ChefAPI(object):
         if not api_stack_value():
             self.set_default()
         self.encryption_key = None
+        # Read the secret key from the input file
         if secret_file is not None:
             self.secret_file = secret_file
             if os.path.exists(self.secret_file):
                 self.encryption_key = open(self.secret_file).read().strip()
-
+        if secret_key is not None:
+            if encryption_key is not None:
+                log.debug('Two encryption key found (file and parameter). The key passed as parameter will be used')
+            self.encryption_key = secret_key
 
     @classmethod
     def from_config_file(cls, path):
