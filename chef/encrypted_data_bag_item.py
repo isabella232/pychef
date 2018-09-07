@@ -112,6 +112,7 @@ def create_decryptor(key, data):
 
 class DecryptorVersion1(object):
     def __init__(self, key, data, iv):
+        self.plain_key = key.encode('utf8')
         self.key = hashlib.sha256(key.encode('utf8')).digest()
         self.data = base64.standard_b64decode(data)
         self.iv = base64.standard_b64decode(iv)
@@ -121,7 +122,7 @@ class DecryptorVersion1(object):
         value = self.decryptor.decrypt(self.data)
         # After decryption we should get a string with JSON
         try:
-            value = json.loads(value)
+            value = json.loads(value.decode('utf8'))
         except ValueError:
             raise ChefDecryptionError("Error decrypting data bag value. Most likely the provided key is incorrect")
         return value['json_wrapper']
@@ -135,7 +136,7 @@ class DecryptorVersion2(DecryptorVersion1):
     def _validate_hmac(self):
         encoded_data = self.encoded_data.encode('utf8')
 
-        expected_hmac = hmac.new(self.key, encoded_data, hashlib.sha256).digest()
+        expected_hmac = hmac.new(self.plain_key, encoded_data, hashlib.sha256).digest()
         valid = len(expected_hmac) ^ len(self.hmac)
         for expected_char, candidate_char in zip_longest(expected_hmac, self.hmac):
             if sys.version_info[0] > 2:
