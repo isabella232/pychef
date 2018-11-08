@@ -6,7 +6,8 @@ from ctypes.util import find_library
 if sys.platform == 'win32' or sys.platform == 'cygwin':
     _eay = CDLL('libeay32.dll')
 else:
-    _eay = CDLL(find_library('crypto'))
+    # Pin to libcrypto.so.1.0
+    _eay = CDLL('libcrypto.so.1.0.0')
 
 #unsigned long ERR_get_error(void);
 ERR_get_error = _eay.ERR_get_error
